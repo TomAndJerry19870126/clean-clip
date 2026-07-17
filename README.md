@@ -14,21 +14,17 @@
   <img alt="Version" src="https://img.shields.io/badge/version-0.9.0-007AFF" />
 </p>
 
-> 简短介绍与 Chrome 商店文案见 [ABOUT.md](./ABOUT.md)。
+**干净摘录（CleanMD）** 是一款 Chrome 扩展（Manifest V3）：把网页正文、划词选区或 AI 对话整理成干净、可读的 Markdown，尽量去掉广告、侧栏与噪声。适合收藏长文、整理对话、给笔记软件或大模型喂干净上下文。
+
+未登录可无限摘录，结果进剪贴板。登录 [闲算](https://www.xiansuan.top) 账号后，摘录自动同步云端历史，并支持口令/链接「传阅」。
 
 ---
-
-## 这是什么
-
-**干净摘录（CleanMD）** 是一款 Chrome 扩展：把网页正文、选区或 AI 对话整理成可读的 Markdown，尽量去掉广告、侧栏与噪声。
-
-无需登录即可无限摘录；登录 [闲算](https://www.xiansuan.top) 账号后，摘录会自动同步云端历史，并支持「传阅」分享。
 
 ## 功能
 
 | 能力 | 说明 |
 | --- | --- |
-| **划词浮标** | 鼠标划选文字后，光标右下角出现图标，一点即摘 |
+| **划词浮标** | 鼠标划选文字后，光标右下角出现图标，一点即摘并复制 Markdown |
 | **摘录本页** | 按站点规则抽取正文 → Markdown |
 | **区域摘录** | 悬停锁定 DOM 区块，可扩大/缩小后确认 |
 | **云端历史** | 登录后自动保存，可在弹窗「历史」打开/复制/删除 |
@@ -65,7 +61,6 @@
 clean-clip/
 ├── manifest.json            # MV3 清单
 ├── README.md                # 本说明
-├── ABOUT.md                 # 简介 / 商店文案
 ├── icons/                   # logo 与扩展图标
 ├── lib/
 │   ├── html2md.js           # HTML → Markdown
