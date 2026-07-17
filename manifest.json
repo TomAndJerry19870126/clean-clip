@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "干净摘录",
   "version": "0.9.4",
-  "description": "CleanMD — clip AI chats & pages to Markdown / Word / Excel.",
+  "description": "把 AI 对话和中文好文一键收成干净 Markdown / Word / Excel。DeepSeek · 豆包 · 千问 · 知乎 · 公众号…",
   "action": {
     "default_title": "干净摘录 · CleanMD",
     "default_popup": "popup/popup.html"
