@@ -1,7 +1,7 @@
 # 干净摘录 · CleanMD
 
 <p align="center">
-  <img src="icons/logo.png" width="96" height="96" alt="CleanMD" />
+  <img src="clean-clip/icons/logo.png" width="96" height="96" alt="CleanMD" />
 </p>
 
 <p align="center">
