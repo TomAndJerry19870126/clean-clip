@@ -224,6 +224,25 @@
       /* ignore */
     }
 
+    let historySaved = false;
+    try {
+      if (typeof ClipStorage !== "undefined" && typeof ClipApi !== "undefined") {
+        const { token } = await ClipStorage.getSession();
+        if (token) {
+          await ClipApi.saveHistory({
+            markdown,
+            title,
+            sourceUrl: location.href,
+            siteHost: location.hostname,
+            clipKind: "region-select",
+          });
+          historySaved = true;
+        }
+      }
+    } catch {
+      /* ignore cloud errors */
+    }
+
     await chrome.storage.local.set({
       clip_last_meta: {
         ok: true,
@@ -236,9 +255,11 @@
         markdown,
         title,
         at: Date.now(),
+        historySaved,
+        clipKind: "region-select",
       },
     });
-    toast("已复制 Markdown · 可再打开插件查看预览");
+    toast(historySaved ? "已复制并同步云端 · 可打开插件查看预览" : "已复制 Markdown · 可再打开插件查看预览");
     stop();
   }
 

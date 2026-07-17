@@ -12,7 +12,7 @@
       <div class="brand-text">
         <h1>干净摘录</h1>
         <div class="brand-meta">
-          <p class="sub">CleanMD · pages → Markdown</p>
+          <p class="sub">AI 对话 · 中文好文 → Markdown</p>
           <span id="app-version" class="version">v…</span>
         </div>
       </div>
@@ -28,7 +28,6 @@
 
     <!-- Clip -->
     <section id="panel-clip" class="panel active">
-      <div id="trial-badge" class="trial-badge hidden"></div>
       <div id="status" class="status"></div>
       <div class="actions">
         <button id="btn-clip" type="button" class="primary">摘录本页</button>
@@ -36,10 +35,11 @@
         <button id="btn-copy" type="button" disabled>复制</button>
         <button id="btn-download-md" type="button" disabled>下载 .md</button>
         <button id="btn-download-word" type="button" disabled>下载 Word</button>
-        <button id="btn-download-excel" type="button" disabled>下载 Excel</button>
-        <button id="btn-share-create" type="button" disabled>生成传阅</button>
       </div>
-      <p class="hint">划词后点浮标即可摘录。下载：Markdown / Word（.doc）/ Excel（.xls，优先导出表格）。</p>      <label class="preview-label" for="preview">预览</label>
+      <p class="hint">
+        主场景：DeepSeek / 豆包 / 千问对话，或知乎 / 公众号等文章 → 摘录本页。其它页用划词浮标或区域摘录。
+      </p>
+      <label class="preview-label" for="preview">预览</label>
       <textarea id="preview" readonly placeholder="摘录结果会出现在这里"></textarea>
       <p id="crash-hint" class="hint hidden">
         摘录不理想？
@@ -60,7 +60,10 @@
     <!-- Share -->
     <section id="panel-share" class="panel">
       <div id="share-status" class="status">
-        两种传阅：① 口令/链接（适合微信）② 发给已注册闲算用户（对方登录后在收件箱领取）。
+        先在「摘录」得到内容，再在此生成口令；或直接用口令领取。
+      </div>
+      <div class="actions">
+        <button id="btn-share-create" type="button" class="primary" disabled>从预览生成口令</button>
       </div>
       <div class="field">
         <label>最近生成的口令 / 链接</label>
@@ -106,10 +109,6 @@
 
       <div id="account-forms">
         <div class="field">
-          <label for="api-base">闲算 API 地址</label>
-          <input id="api-base" type="url" placeholder="https://www.xiansuan.top" />
-        </div>
-        <div class="field">
           <label for="auth-email">邮箱</label>
           <input id="auth-email" type="email" autocomplete="username" />
         </div>
@@ -128,9 +127,18 @@
           <button id="btn-login" type="button" class="primary">登录</button>
           <button id="btn-toggle-reg" type="button">去注册</button>
           <button id="btn-register" type="button" class="primary hidden">注册并登录</button>
-          <button id="btn-save-api" type="button">保存 API</button>
         </div>
         <p class="hint" id="register-hint">登录后摘录自动进云端历史，反馈也会关联账号。</p>
+        <details class="advanced">
+          <summary>高级：API 地址</summary>
+          <div class="field">
+            <label for="api-base">闲算 API</label>
+            <input id="api-base" type="url" placeholder="https://www.xiansuan.top" />
+          </div>
+          <div class="actions">
+            <button id="btn-save-api" type="button">保存 API</button>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -148,7 +156,10 @@
       </div>
       <div class="field">
         <label for="fb-content">内容</label>
-        <textarea id="fb-content" placeholder="例如：京东商品页价格没剪到；希望支持某某站…"></textarea>
+        <textarea
+          id="fb-content"
+          placeholder="例如：DeepSeek 长对话漏了几轮；某公众号正文没剪全…"
+        ></textarea>
       </div>
       <div class="field">
         <label for="fb-email">联系邮箱（可选）</label>
@@ -158,7 +169,7 @@
         <button id="btn-feedback" type="button" class="primary">提交到闲算</button>
         <button id="btn-fill-crash" type="button">填入上次摘录信息</button>
       </div>
-      <p class="hint">数据发往你配置的闲算服务端，用于改进选择器与站点覆盖。</p>
+      <p class="hint">用于改进 AI 对话摘录与中文站点选择器。</p>
     </section>
 
     <script src="../lib/storage.js"></script>

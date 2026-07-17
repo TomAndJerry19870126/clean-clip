@@ -5,10 +5,8 @@ const btnRegion = document.getElementById("btn-region");
 const btnCopy = document.getElementById("btn-copy");
 const btnDownloadMd = document.getElementById("btn-download-md");
 const btnDownloadWord = document.getElementById("btn-download-word");
-const btnDownloadExcel = document.getElementById("btn-download-excel");
 const btnShareCreate = document.getElementById("btn-share-create");
 const crashHint = document.getElementById("crash-hint");
-const trialBadge = document.getElementById("trial-badge");
 
 const shareStatus = document.getElementById("share-status");
 const shareCodeOut = document.getElementById("share-code-out");
@@ -72,19 +70,6 @@ document.querySelectorAll(".tab").forEach((tab) => {
   tab.addEventListener("click", () => showPanel(tab.dataset.tab));
 });
 
-async function refreshTrialBadge() {
-  const st = await ClipStorage.getTrialStatus();
-  trialBadge.classList.remove("warn", "ok");
-  if (st.loggedIn) {
-    trialBadge.textContent = "已登录";
-    trialBadge.classList.add("ok");
-    trialBadge.classList.remove("hidden");
-    return;
-  }
-  trialBadge.textContent = "";
-  trialBadge.classList.add("hidden");
-}
-
 async function saveCloudHistory(markdown, title, meta) {
   const { token } = await ClipStorage.getSession();
   if (!token || !markdown) return null;
@@ -111,8 +96,7 @@ function setResult(markdown, title, meta) {
   btnCopy.disabled = !has;
   btnDownloadMd.disabled = !has;
   btnDownloadWord.disabled = !has;
-  btnDownloadExcel.disabled = !has;
-  btnShareCreate.disabled = !has;
+  if (btnShareCreate) btnShareCreate.disabled = !has;
   const btnShareToUser = document.getElementById("btn-share-to-user");
   if (btnShareToUser) btnShareToUser.disabled = !has;
   crashHint.classList.toggle("hidden", !has);
@@ -165,10 +149,9 @@ async function runClip() {
     const [{ result }] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: async () => {
-        if (window.__ZHIHU_CLEAN_CLIP_READY__) {
-          return await window.__ZHIHU_CLEAN_CLIP_READY__;
-        }
-        return window.__ZHIHU_CLEAN_CLIP__;
+        const ready = window.__CLEAN_CLIP_READY__ || window.__ZHIHU_CLEAN_CLIP_READY__;
+        if (ready) return await ready;
+        return window.__CLEAN_CLIP__ || window.__ZHIHU_CLEAN_CLIP__;
       },
     });
 
@@ -199,7 +182,6 @@ async function runClip() {
     const saved = await saveCloudHistory(result.markdown, result.title, meta);
     const cloudNote = saved ? " · 已同步云端" : "";
     setStatus(statusEl, `完成（${result.kind}）· ${result.markdown.length} 字符${cloudNote}`, "ok");
-    await refreshTrialBadge();
   } catch (e) {
     setStatus(statusEl, `注入失败：${e?.message || e}\n请重新加载扩展并刷新页面。`, "err");
     crashHint.classList.remove("hidden");
@@ -230,18 +212,6 @@ function downloadWord() {
   setStatus(statusEl, "已开始下载 Word（.doc，可用 Word/WPS 打开）。", "ok");
 }
 
-function downloadExcel() {
-  if (!lastMarkdown) return;
-  const { tableCount } = ClipExport.downloadExcel(lastMarkdown, lastTitle || "cleanmd");
-  setStatus(
-    statusEl,
-    tableCount
-      ? `已开始下载 Excel（.xls，含 ${tableCount} 张表）。`
-      : "已开始下载 Excel（.xls）；未检测到表格，已按正文逐行导出。",
-    "ok",
-  );
-}
-
 function setRegisterMode(on) {
   registerMode = on;
   regCodeWrap.classList.toggle("hidden", !on);
@@ -266,19 +236,15 @@ async function refreshAccountUi() {
     accountLoggedIn.classList.remove("hidden");
     accountForms.classList.add("hidden");
     accountEmail.textContent = user.email || "";
-    accountName.textContent = user.displayName
-      ? `昵称：${user.displayName}`
-      : `余额：${user.creditsBalance ?? "-"} CR`;
+    accountName.textContent = user.displayName ? `昵称：${user.displayName}` : "";
     setStatus(accountStatus, "已登录 · 摘录会同步到云端历史。", "ok");
     fbEmail.value = user.email || "";
-    await refreshTrialBadge();
     return;
   }
   accountLoggedIn.classList.add("hidden");
   accountForms.classList.remove("hidden");
   setStatus(accountStatus, "登录后可同步云端历史与传阅收件箱。");
   await syncConfigFromServer();
-  await refreshTrialBadge();
 }
 
 async function doLogin() {
@@ -392,7 +358,7 @@ async function startRegionClip() {
   try {
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ["lib/html2md.js", "content/region-select.js"],
+      files: ["lib/storage.js", "lib/api.js", "lib/html2md.js", "content/region-select.js"],
     });
     setStatus(
       statusEl,
@@ -434,7 +400,6 @@ async function loadRegionResultIfAny() {
     "ok",
   );
   await chrome.storage.local.remove(["clip_region_result"]);
-  await refreshTrialBadge();
 }
 
 async function refreshHistory() {
@@ -664,8 +629,7 @@ btnRegion.addEventListener("click", () => startRegionClip());
 btnCopy.addEventListener("click", () => copyMarkdown());
 btnDownloadMd.addEventListener("click", () => downloadMarkdown());
 btnDownloadWord.addEventListener("click", () => downloadWord());
-btnDownloadExcel.addEventListener("click", () => downloadExcel());
-btnShareCreate.addEventListener("click", () => createShare());
+if (btnShareCreate) btnShareCreate.addEventListener("click", () => createShare());
 btnShareFetch.addEventListener("click", () => fetchShare());
 document.getElementById("btn-share-to-user").addEventListener("click", () => shareToUser());
 document.getElementById("btn-inbox-refresh").addEventListener("click", () => refreshInbox());
@@ -704,7 +668,6 @@ btnSaveApi.addEventListener("click", async () => {
   await ClipStorage.setApiBase(apiBaseInput.value);
   setStatus(accountStatus, "API 地址已保存。", "ok");
   await syncConfigFromServer();
-  await refreshTrialBadge();
 });
 
 setStatus(statusEl, "");
@@ -716,5 +679,4 @@ try {
   /* ignore */
 }
 refreshAccountUi();
-refreshTrialBadge();
 loadRegionResultIfAny();

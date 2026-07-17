@@ -296,8 +296,11 @@
   }
 
   // May return a Promise for AI chats (DeepSeek scroll-load).
-  window.__ZHIHU_CLEAN_CLIP_READY__ = Promise.resolve(clip()).then((result) => {
-    window.__ZHIHU_CLEAN_CLIP__ = result;
+  const ready = Promise.resolve(clip()).then((result) => {
+    window.__CLEAN_CLIP__ = result;
+    window.__ZHIHU_CLEAN_CLIP__ = result; // legacy alias
     return result;
   });
+  window.__CLEAN_CLIP_READY__ = ready;
+  window.__ZHIHU_CLEAN_CLIP_READY__ = ready;
 })();
