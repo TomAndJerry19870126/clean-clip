@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "干净摘录",
+  "version": "0.9.1",
+  "description": "CleanMD — clip AI chats & pages to Markdown / Word / Excel.",
+  "action": {
+    "default_title": "干净摘录 · CleanMD",
+    "default_popup": "popup/popup.html"
+  },
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": [
+        "lib/storage.js",
+        "lib/api.js",
+        "lib/html2md.js",
+        "content/selection-bubble.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/logo.png", "icons/icon48.png"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
