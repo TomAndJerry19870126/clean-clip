@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>干净摘录</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="brand">
+      <img class="brand-mark" src="../icons/logo.png" width="32" height="32" alt="" />
+      <div class="brand-text">
+        <h1>干净摘录</h1>
+        <div class="brand-meta">
+          <p class="sub">CleanMD · pages → Markdown</p>
+          <span id="app-version" class="version">v…</span>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="clip">摘录</button>
+      <button type="button" class="tab" data-tab="history">历史</button>
+      <button type="button" class="tab" data-tab="share">传阅</button>
+      <button type="button" class="tab" data-tab="account">账号</button>
+      <button type="button" class="tab" data-tab="feedback">反馈</button>
+    </nav>
+
+    <!-- Clip -->
+    <section id="panel-clip" class="panel active">
+      <div id="trial-badge" class="trial-badge">加载中…</div>
+      <div id="status" class="status">准备中…</div>
+      <div class="actions">
+        <button id="btn-clip" type="button" class="primary">摘录本页</button>
+        <button id="btn-region" type="button">区域摘录</button>
+        <button id="btn-copy" type="button" disabled>复制</button>
+        <button id="btn-download" type="button" disabled>下载 .md</button>
+        <button id="btn-share-create" type="button" disabled>生成传阅</button>
+      </div>
+      <p class="hint">划词后页面旁会出现 CleanMD 图标，一点即可摘录。也可用「区域摘录」框选整块。</p>
+      <label class="preview-label" for="preview">预览</label>
+      <textarea id="preview" readonly placeholder="摘录结果会出现在这里"></textarea>
+      <p id="crash-hint" class="hint hidden">
+        摘录不理想？
+        <button type="button" class="linkish" id="btn-goto-crash">一键提交翻车反馈</button>
+      </p>
+    </section>
+
+    <!-- History (cloud, login required) -->
+    <section id="panel-history" class="panel">
+      <div id="history-status" class="status">登录后，摘录会自动保存到云端历史。</div>
+      <div class="actions">
+        <button type="button" id="btn-history-refresh">刷新历史</button>
+      </div>
+      <div id="history-list" class="inbox"></div>
+      <p class="hint">登录后可在此打开、复制或删除云端记录。</p>
+    </section>
+
+    <!-- Share -->
+    <section id="panel-share" class="panel">
+      <div id="share-status" class="status">
+        两种传阅：① 口令/链接（适合微信）② 发给已注册闲算用户（对方登录后在收件箱领取）。
+      </div>
+      <div class="field">
+        <label>最近生成的口令 / 链接</label>
+        <input id="share-code-out" type="text" readonly placeholder="口令" />
+        <input id="share-url-out" type="text" readonly placeholder="链接" class="mt" />
+      </div>
+      <div class="actions">
+        <button id="btn-copy-share-code" type="button" disabled>复制口令</button>
+        <button id="btn-copy-share-url" type="button" disabled>复制链接</button>
+      </div>
+      <div class="field">
+        <label for="share-to-email">发给闲算用户（对方注册邮箱）</label>
+        <div class="row">
+          <input id="share-to-email" type="email" placeholder="friend@example.com" />
+          <button type="button" id="btn-share-to-user" class="primary" disabled>发送</button>
+        </div>
+      </div>
+      <hr class="sep" />
+      <div class="field">
+        <label for="share-code-in">用口令领取</label>
+        <div class="row">
+          <input id="share-code-in" type="text" maxlength="16" placeholder="例如 K7M2QX" />
+          <button type="button" id="btn-share-fetch" class="primary">领取</button>
+        </div>
+      </div>
+      <hr class="sep" />
+      <div class="actions">
+        <button type="button" id="btn-inbox-refresh">刷新我的收件箱</button>
+      </div>
+      <div id="share-inbox" class="inbox"></div>
+      <p class="hint">定向发送需双方都登录闲算账号；口令分享无需对方登录。</p>
+    </section>
+
+    <!-- Account -->
+    <section id="panel-account" class="panel">
+      <div id="account-status" class="status">加载账号…</div>
+
+      <div id="account-logged-in" class="hidden">
+        <p class="meta-line"><span id="account-email"></span></p>
+        <p class="meta-line muted" id="account-name"></p>
+        <button id="btn-logout" type="button">退出登录</button>
+      </div>
+
+      <div id="account-forms">
+        <div class="field">
+          <label for="api-base">闲算 API 地址</label>
+          <input id="api-base" type="url" placeholder="https://www.xiansuan.top" />
+        </div>
+        <div class="field">
+          <label for="auth-email">邮箱</label>
+          <input id="auth-email" type="email" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="auth-password">密码</label>
+          <input id="auth-password" type="password" autocomplete="current-password" />
+        </div>
+        <div class="field hidden" id="reg-code-wrap">
+          <label for="auth-code">注册验证码</label>
+          <div class="row">
+            <input id="auth-code" type="text" maxlength="6" placeholder="6 位验证码" />
+            <button type="button" id="btn-send-code">发验证码</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="btn-login" type="button" class="primary">登录</button>
+          <button id="btn-toggle-reg" type="button">去注册</button>
+          <button id="btn-register" type="button" class="primary hidden">注册并登录</button>
+          <button id="btn-save-api" type="button">保存 API</button>
+        </div>
+        <p class="hint" id="register-hint">登录后摘录自动进云端历史，反馈也会关联账号。</p>
+      </div>
+    </section>
+
+    <!-- Feedback -->
+    <section id="panel-feedback" class="panel">
+      <div id="feedback-status" class="status">描述问题或建议后提交。</div>
+      <div class="field">
+        <label for="fb-kind">类型</label>
+        <select id="fb-kind">
+          <option value="crash">翻车 / 剪错了</option>
+          <option value="suggestion">功能建议</option>
+          <option value="praise">好评</option>
+          <option value="other">其它</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fb-content">内容</label>
+        <textarea id="fb-content" placeholder="例如：京东商品页价格没剪到；希望支持某某站…"></textarea>
+      </div>
+      <div class="field">
+        <label for="fb-email">联系邮箱（可选）</label>
+        <input id="fb-email" type="email" placeholder="未登录时可填" />
+      </div>
+      <div class="actions">
+        <button id="btn-feedback" type="button" class="primary">提交到闲算</button>
+        <button id="btn-fill-crash" type="button">填入上次摘录信息</button>
+      </div>
+      <p class="hint">数据发往你配置的闲算服务端，用于改进选择器与站点覆盖。</p>
+    </section>
+
+    <script src="../lib/storage.js"></script>
+    <script src="../lib/api.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
