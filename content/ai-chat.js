@@ -70,29 +70,73 @@
   }
 
   function packTurns(kind, title, turns) {
-    if (!turns.length) {
+    const cleaned = dedupeTurns(turns);
+    if (!cleaned.length) {
       return {
         ok: false,
         error:
-          "未找到对话消息。请确认已打开具体会话，必要时向上滚动加载更多后再试。",
+          "未找到对话消息。请确认已打开具体会话，必要时向上滚动加载更多历史后再试。",
       };
     }
+    const note = qualityNote(cleaned);
     const lines = [];
     lines.push(`# ${title || "AI 对话"}`, "");
     lines.push(`- 平台：${kind}`);
     lines.push(`- 来源：${location.href}`);
+    lines.push(`- 轮次：${cleaned.length}`);
     lines.push(`- 说明：仅包含当前页面已渲染的消息`, "");
-    for (const turn of turns) {
-      lines.push(`## ${turn.role}`, "");
+    if (note) lines.push(`> ${note}`, "");
+    cleaned.forEach((turn, i) => {
+      lines.push(`## ${turn.role} · #${i + 1}`, "");
       lines.push(turn.body, "");
-    }
+    });
     return {
       ok: true,
       kind,
       title: title || kind,
       author: "",
+      turns: cleaned,
+      warning: note || "",
       markdown: lines.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n",
     };
+  }
+
+  function turnKey(role, body) {
+    const norm = (body || "").replace(/\s+/g, " ").trim().slice(0, 160);
+    return `${role}::${norm}`;
+  }
+
+  /** Drop exact / near-duplicate turns; keep the longer body on near-match. */
+  function dedupeTurns(turns) {
+    const out = [];
+    for (const t of turns || []) {
+      const body = (t.body || "").trim();
+      if (!body || isNoiseText(body)) continue;
+      const role = t.role || "助手";
+      const key = turnKey(role, body);
+      const near = `${role}::${body.replace(/\s+/g, " ").slice(0, 100)}`;
+      const prevIdx = out.findIndex((x) => {
+        const xKey = turnKey(x.role, x.body);
+        const xNear = `${x.role}::${x.body.replace(/\s+/g, " ").slice(0, 100)}`;
+        return xKey === key || xNear === near;
+      });
+      if (prevIdx >= 0) {
+        if (body.length > out[prevIdx].body.length) out[prevIdx] = { role, body };
+        continue;
+      }
+      out.push({ role, body });
+    }
+    return out;
+  }
+
+  function qualityNote(turns) {
+    if (!turns.length) return "";
+    const users = turns.filter((t) => t.role === "用户").length;
+    const bots = turns.length - users;
+    if (turns.length === 1) return "仅抓到 1 条消息，可向上滚动加载更多后再摘一次。";
+    if (users === 0) return "未识别到用户消息，请核对预览是否缺轮。";
+    if (bots === 0) return "未识别到助手回复，请核对预览是否缺轮。";
+    return "";
   }
 
   function chatTitle(fallbacks) {
@@ -214,11 +258,6 @@
   function isThinkLikeAssistantBody(body) {
     if (!body || body.length > 800) return false;
     return /我需要|我将|为了全面|同时进行多项搜索|用户想了解|我先|接下来我会/.test(body);
-  }
-
-  function turnKey(role, body) {
-    const norm = (body || "").replace(/\s+/g, " ").trim().slice(0, 160);
-    return `${role}::${norm}`;
   }
 
   function extractDeepSeekTurnsOnce() {
@@ -461,7 +500,10 @@
     best = best.filter((t) => t.body && !isNoiseText(t.body));
 
     const result = packTurns("deepseek-chat", title, best);
-    if (result.ok) {
+    if (!result.ok) {
+      result.error =
+        "未收集到 DeepSeek 对话。请先滚到会话顶部加载历史，再点摘录；仍缺段可用划词或区域摘录。";
+    } else {
       result.markdown = result.markdown.replace(
         "- 说明：仅包含当前页面已渲染的消息",
         "- 说明：已滚动收集多轮对话（虚拟列表会卸载离屏消息）；若仍缺段请先滚到顶部再摘录",
@@ -486,6 +528,8 @@
     );
     if (withRole.length) {
       withRole.forEach((node) => {
+        if (node.parentElement?.closest('[data-role], [class*="questionItem"], [class*="answerItem"]'))
+          return;
         const cls = (node.className || "").toString().toLowerCase();
         const roleAttr = (node.getAttribute("data-role") || "").toLowerCase();
         let role = "千问";
@@ -517,7 +561,7 @@
         cls.includes("user") ||
         cls.includes("question") ||
         cls.includes("human") ||
-        item.querySelector('[class*="user-avatar"], [class*="UserAvatar"]');
+        !!item.querySelector('[class*="user-avatar"], [class*="UserAvatar"]');
       const bodyEl =
         item.querySelector(
           ".markdown-body, .tongyi-markdown, [class*='markdown'], [class*='content'], [class*='Content']"
@@ -538,7 +582,12 @@
       if (!body || isNoiseText(body)) return;
       turns.push({ role: i % 2 === 0 ? "用户" : "千问", body });
     });
-    return packTurns("qwen-chat", title, turns);
+    const packed = packTurns("qwen-chat", title, turns);
+    if (!packed.ok) {
+      packed.error =
+        "未识别到通义千问对话。请打开具体会话页，等消息加载完后再试；仍失败可用划词或区域摘录。";
+    }
+    return packed;
   }
 
   // ——— 豆包 ———
@@ -595,17 +644,20 @@
       return 0;
     });
 
-    const seen = new Set();
     for (const { role, el } of nodes) {
       const bodyEl =
         el.querySelector(".flow-markdown-body, .md-box-root, [class*='markdown']") || el;
       const body = toMd(cleanClone(bodyEl));
-      if (!body || isNoiseText(body) || seen.has(body.slice(0, 80))) continue;
-      seen.add(body.slice(0, 80));
+      if (!body || isNoiseText(body)) continue;
       turns.push({ role, body });
     }
 
-    return packTurns("doubao-chat", title, turns);
+    const packed = packTurns("doubao-chat", title, turns);
+    if (!packed.ok) {
+      packed.error =
+        "未识别到豆包对话。请打开具体会话，等气泡加载完后再试；仍失败可用划词或区域摘录。";
+    }
+    return packed;
   }
 
   function detect() {

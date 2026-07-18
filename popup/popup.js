@@ -1,10 +1,13 @@
 const statusEl = document.getElementById("status");
+const exportStatusEl = document.getElementById("export-status");
 const previewEl = document.getElementById("preview");
 const btnClip = document.getElementById("btn-clip");
 const btnRegion = document.getElementById("btn-region");
 const btnCopy = document.getElementById("btn-copy");
 const btnDownloadMd = document.getElementById("btn-download-md");
 const btnDownloadWord = document.getElementById("btn-download-word");
+const btnExportObsidian = document.getElementById("btn-export-obsidian");
+const btnExportNotion = document.getElementById("btn-export-notion");
 const btnShareCreate = document.getElementById("btn-share-create");
 const crashHint = document.getElementById("crash-hint");
 
@@ -43,7 +46,14 @@ const fbEmail = document.getElementById("fb-email");
 let lastMarkdown = "";
 let lastTitle = "cleanmd";
 let lastMeta = null;
+let lastTurns = null;
+let lastTurnsFull = null;
+let lastChatKind = "";
 let registerMode = false;
+
+const turnEditor = document.getElementById("turn-editor");
+const turnList = document.getElementById("turn-list");
+const btnTurnsReset = document.getElementById("btn-turns-reset");
 
 function setStatus(el, text, kind) {
   el.textContent = text;
@@ -87,20 +97,149 @@ async function saveCloudHistory(markdown, title, meta) {
   }
 }
 
-function setResult(markdown, title, meta) {
+function isAiChatKind(kind) {
+  return /deepseek|qwen|doubao|chat/i.test(kind || "");
+}
+
+function parseTurnsFromMarkdown(md) {
+  if (!md) return null;
+  const parts = md.split(/^## /m);
+  if (parts.length < 2) return null;
+  const turns = [];
+  for (let i = 1; i < parts.length; i++) {
+    const block = parts[i];
+    const nl = block.indexOf("\n");
+    const head = (nl >= 0 ? block.slice(0, nl) : block).trim();
+    const body = (nl >= 0 ? block.slice(nl + 1) : "").trim();
+    if (!head || !body) continue;
+    const role = head.replace(/\s*·\s*#\d+\s*$/, "").trim();
+    if (!role) continue;
+    turns.push({ role, body });
+  }
+  return turns.length ? turns : null;
+}
+
+function rebuildChatMarkdown(turns, title, kind, pageUrl) {
+  const lines = [];
+  lines.push(`# ${title || "AI 对话"}`, "");
+  lines.push(`- 平台：${kind || "ai-chat"}`);
+  if (pageUrl) lines.push(`- 来源：${pageUrl}`);
+  lines.push(`- 轮次：${turns.length}`);
+  lines.push(`- 说明：已按预览编辑（可删轮）`, "");
+  turns.forEach((turn, i) => {
+    lines.push(`## ${turn.role} · #${i + 1}`, "");
+    lines.push(turn.body, "");
+  });
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim() + "\n";
+}
+
+function renderTurnEditor() {
+  if (!turnEditor || !turnList) return;
+  const show = Array.isArray(lastTurnsFull) && lastTurnsFull.length > 0;
+  turnEditor.classList.toggle("hidden", !show);
+  if (!show) {
+    turnList.innerHTML = "";
+    if (btnTurnsReset) btnTurnsReset.hidden = true;
+    return;
+  }
+  const cur = lastTurns || [];
+  if (btnTurnsReset) btnTurnsReset.hidden = cur.length >= lastTurnsFull.length;
+  if (!cur.length) {
+    turnList.innerHTML = '<p class="hint" style="margin:0">已全部删除 · 可点「恢复全部」</p>';
+    return;
+  }
+  turnList.innerHTML = cur
+    .map((t, i) => {
+      const snip = (t.body || "").replace(/\s+/g, " ").slice(0, 48);
+      return `<div class="turn-row" data-idx="${i}">
+        <span class="turn-role">${escapeHtml(t.role)}</span>
+        <span class="turn-snip" title="${escapeAttr(t.body || "")}">${escapeHtml(snip)}</span>
+        <button type="button" class="turn-del" data-del="${i}">删除</button>
+      </div>`;
+    })
+    .join("");
+}
+
+function escapeHtml(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/\n/g, " ");
+}
+
+function applyTurnsEdit() {
+  const kind = lastChatKind || lastMeta?.clipKind || "ai-chat";
+  if (!lastTurns?.length) {
+    lastMarkdown = "";
+    previewEl.value = "";
+    btnCopy.disabled = true;
+    btnDownloadMd.disabled = true;
+    btnDownloadWord.disabled = true;
+    if (btnShareCreate) btnShareCreate.disabled = true;
+    if (lastMeta) {
+      lastMeta.previewSnippet = "";
+      lastMeta.turnCount = 0;
+      ClipStorage.setLastClipMeta(lastMeta);
+    }
+    renderTurnEditor();
+    setStatus(statusEl, "已删光全部轮次 · 可恢复全部", "err");
+    return;
+  }
+  const md = rebuildChatMarkdown(lastTurns, lastTitle, kind, lastMeta?.pageUrl);
+  lastMarkdown = md;
+  previewEl.value = md;
+  btnCopy.disabled = false;
+  btnDownloadMd.disabled = false;
+  btnDownloadWord.disabled = false;
+  if (btnShareCreate) btnShareCreate.disabled = false;
+  if (lastMeta) {
+    lastMeta.previewSnippet = md.slice(0, 1500);
+    lastMeta.turnCount = lastTurns.length;
+    ClipStorage.setLastClipMeta(lastMeta);
+  }
+  renderTurnEditor();
+  setStatus(statusEl, `已更新预览 · 剩余 ${lastTurns.length} 轮`, "ok");
+}
+
+function setResult(markdown, title, meta, turns) {
   lastMarkdown = markdown || "";
-  lastTitle = (title || "cleanmd").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
+  lastTitle = (title || "ai-notebook").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
   lastMeta = meta || null;
   previewEl.value = lastMarkdown;
   const has = Boolean(lastMarkdown);
   btnCopy.disabled = !has;
   btnDownloadMd.disabled = !has;
   btnDownloadWord.disabled = !has;
+  btnExportObsidian.disabled = !has;
+  btnExportNotion.disabled = !has;
   if (btnShareCreate) btnShareCreate.disabled = !has;
   const btnShareToUser = document.getElementById("btn-share-to-user");
   if (btnShareToUser) btnShareToUser.disabled = !has;
   crashHint.classList.toggle("hidden", !has);
-  if (meta) ClipStorage.setLastClipMeta(meta);
+
+  const kind = meta?.clipKind || "";
+  let resolved = Array.isArray(turns) && turns.length ? turns : null;
+  if (!resolved && isAiChatKind(kind)) resolved = parseTurnsFromMarkdown(lastMarkdown);
+  if (resolved?.length) {
+    lastTurns = resolved.map((t) => ({ role: t.role, body: t.body }));
+    lastTurnsFull = lastTurns.map((t) => ({ ...t }));
+    lastChatKind = kind;
+  } else {
+    lastTurns = null;
+    lastTurnsFull = null;
+    lastChatKind = "";
+  }
+  renderTurnEditor();
+
+  if (meta) {
+    meta.turnCount = lastTurns?.length || undefined;
+    ClipStorage.setLastClipMeta(meta);
+  }
 }
 
 async function getActiveTab() {
@@ -176,12 +315,20 @@ async function runClip() {
       siteHost: new URL(tab.url).hostname,
       clipKind: result.kind,
       previewSnippet: (result.markdown || "").slice(0, 1500),
+      turnCount: Array.isArray(result.turns) ? result.turns.length : undefined,
+      extensionVersion: chrome.runtime.getManifest().version,
     };
-    setResult(result.markdown, result.title, meta);
+    setResult(result.markdown, result.title, meta, result.turns);
 
     const saved = await saveCloudHistory(result.markdown, result.title, meta);
     const cloudNote = saved ? " · 已同步云端" : "";
-    setStatus(statusEl, `完成（${result.kind}）· ${result.markdown.length} 字符${cloudNote}`, "ok");
+    const warnNote = result.warning ? ` · ${result.warning}` : "";
+    const turnNote = result.turns?.length ? ` · ${result.turns.length} 轮` : "";
+    setStatus(
+      statusEl,
+      `完成（${result.kind}）· ${result.markdown.length} 字符${turnNote}${cloudNote}${warnNote}`,
+      result.warning ? "err" : "ok",
+    );
   } catch (e) {
     setStatus(statusEl, `注入失败：${e?.message || e}\n请重新加载扩展并刷新页面。`, "err");
     crashHint.classList.remove("hidden");
@@ -208,8 +355,45 @@ function downloadMarkdown() {
 
 function downloadWord() {
   if (!lastMarkdown) return;
-  ClipExport.downloadWord(lastMarkdown, lastTitle || "cleanmd");
+  ClipExport.downloadWord(lastMarkdown, lastTitle || "ai-notebook");
   setStatus(statusEl, "已开始下载 Word（.doc，可用 Word/WPS 打开）。", "ok");
+}
+
+function exportToObsidian() {
+  if (!lastMarkdown) return;
+  const meta = {
+    sourceUrl: lastMeta?.pageUrl,
+    clipKind: lastMeta?.clipKind,
+    platform: getPlatformFromKind(lastMeta?.clipKind),
+  };
+  const obsidianMd = ClipExport.buildObsidianMd(lastMarkdown, lastTitle, meta);
+  ClipExport.downloadMarkdown(obsidianMd, lastTitle || "ai-notebook");
+  setStatus(exportStatusEl, "已下载 Obsidian 格式 .md（带 frontmatter）", "ok");
+}
+
+function exportToNotion() {
+  if (!lastMarkdown) return;
+  try {
+    const blocks = ClipExport.toNotionBlocks(lastMarkdown);
+    const notionJson = JSON.stringify(blocks, null, 2);
+    navigator.clipboard.writeText(notionJson).then(() => {
+      setStatus(exportStatusEl, "Notion 块格式已复制！到 Notion 页面按 Ctrl/Cmd+V 粘贴。", "ok");
+    }).catch(() => {
+      setStatus(exportStatusEl, "复制失败，请手动复制预览内容。", "err");
+    });
+  } catch (e) {
+    setStatus(exportStatusEl, "导出失败：" + (e?.message || e), "err");
+  }
+}
+
+function getPlatformFromKind(kind) {
+  if (!kind) return "";
+  if (/deepseek/i.test(kind)) return "DeepSeek";
+  if (/doubao/i.test(kind)) return "豆包";
+  if (/qwen/i.test(kind)) return "通义千问";
+  if (/zhihu/i.test(kind)) return "知乎";
+  if (/weixin|wx|mp\.weixin/i.test(kind)) return "微信公众号";
+  return kind;
 }
 
 function setRegisterMode(on) {
@@ -238,7 +422,6 @@ async function refreshAccountUi() {
     accountEmail.textContent = user.email || "";
     accountName.textContent = user.displayName ? `昵称：${user.displayName}` : "";
     setStatus(accountStatus, "已登录 · 摘录会同步到云端历史。", "ok");
-    fbEmail.value = user.email || "";
     return;
   }
   accountLoggedIn.classList.add("hidden");
@@ -305,18 +488,26 @@ async function fillCrashForm() {
     return;
   }
   fbKind.value = "crash";
+  let ver = "";
+  try {
+    ver = chrome.runtime.getManifest().version;
+  } catch {
+    /* ignore */
+  }
   const lines = [
     meta.ok === false ? "摘录失败/不理想" : "摘录结果需要改进",
+    `扩展版本：${meta.extensionVersion || ver || ""}`,
     `站点：${meta.siteHost || ""}`,
     `类型：${meta.clipKind || ""}`,
     `URL：${meta.pageUrl || ""}`,
+    meta.turnCount != null ? `轮次：${meta.turnCount}` : "",
     meta.error ? `错误：${meta.error}` : "",
     "",
     "问题描述：",
     "",
   ].filter((x, i, a) => x !== "" || a[i - 1] !== "");
   fbContent.value = lines.join("\n");
-  setStatus(feedbackStatus, "已填入上次摘录信息，请补充具体问题后提交。", "ok");
+  setStatus(feedbackStatus, "已填入站点 / 类型 / URL，请补充具体问题后提交。", "ok");
 }
 
 async function submitFeedback() {
@@ -336,6 +527,8 @@ async function submitFeedback() {
       siteHost: meta.siteHost || undefined,
       clipKind: meta.clipKind || undefined,
       previewSnippet: meta.previewSnippet || meta.error || undefined,
+      extensionVersion: meta.extensionVersion || chrome.runtime.getManifest().version,
+      turnCount: meta.turnCount,
     });
     setStatus(feedbackStatus, "已提交，感谢反馈！", "ok");
     fbContent.value = "";
@@ -629,8 +822,28 @@ btnRegion.addEventListener("click", () => startRegionClip());
 btnCopy.addEventListener("click", () => copyMarkdown());
 btnDownloadMd.addEventListener("click", () => downloadMarkdown());
 btnDownloadWord.addEventListener("click", () => downloadWord());
+if (btnExportObsidian) btnExportObsidian.addEventListener("click", () => exportToObsidian());
+if (btnExportNotion) btnExportNotion.addEventListener("click", () => exportToNotion());
 if (btnShareCreate) btnShareCreate.addEventListener("click", () => createShare());
 btnShareFetch.addEventListener("click", () => fetchShare());
+
+if (turnList) {
+  turnList.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-del]");
+    if (!btn || !lastTurns) return;
+    const idx = Number(btn.getAttribute("data-del"));
+    if (!Number.isFinite(idx) || idx < 0 || idx >= lastTurns.length) return;
+    lastTurns = lastTurns.filter((_, i) => i !== idx);
+    applyTurnsEdit();
+  });
+}
+if (btnTurnsReset) {
+  btnTurnsReset.addEventListener("click", () => {
+    if (!lastTurnsFull?.length) return;
+    lastTurns = lastTurnsFull.map((t) => ({ ...t }));
+    applyTurnsEdit();
+  });
+}
 document.getElementById("btn-share-to-user").addEventListener("click", () => shareToUser());
 document.getElementById("btn-inbox-refresh").addEventListener("click", () => refreshInbox());
 btnCopyShareCode.addEventListener("click", async () => {
@@ -651,12 +864,7 @@ btnCopyShareUrl.addEventListener("click", async () => {
     setStatus(shareStatus, "复制失败。", "err");
   }
 });
-document.getElementById("btn-goto-crash").addEventListener("click", async () => {
-  showPanel("feedback");
-  await fillCrashForm();
-});
-document.getElementById("btn-fill-crash").addEventListener("click", () => fillCrashForm());
-document.getElementById("btn-feedback").addEventListener("click", () => submitFeedback());
+document.getElementById("btn-goto-feedback")?.addEventListener("click", () => showPanel("share"));
 
 document.getElementById("btn-history-refresh").addEventListener("click", () => refreshHistory());
 btnLogin.addEventListener("click", () => doLogin());
@@ -670,6 +878,161 @@ btnSaveApi.addEventListener("click", async () => {
   await syncConfigFromServer();
 });
 
+// AI Summary state
+let lastSummary = "";
+let lastAiMeta = null;
+const btnAiSummary = document.getElementById("btn-ai-summary");
+const aiSummaryPreview = document.getElementById("ai-summary-preview");
+const aiSummaryContent = document.getElementById("ai-summary-content");
+const btnCopySummary = document.getElementById("btn-copy-summary");
+const btnAppendSummary = document.getElementById("btn-append-summary");
+const aiApiBaseInput = document.getElementById("ai-api-base");
+const aiApiKeyInput = document.getElementById("ai-api-key");
+const aiModelInput = document.getElementById("ai-model");
+const btnSaveAiSettings = document.getElementById("btn-save-ai-settings");
+const btnTestAi = document.getElementById("btn-test-ai");
+const aiTestResult = document.getElementById("ai-test-result");
+const aiSettingsStatus = document.getElementById("ai-settings-status");
+
+async function loadAiSettings() {
+  const settings = await ClipStorage.getAiSettings();
+  if (aiApiBaseInput) aiApiBaseInput.value = settings.apiBase || "https://api.deepseek.com";
+  if (aiModelInput) aiModelInput.value = settings.model || "deepseek-chat";
+  // API Key 不显示明文，只显示是否已配置
+  if (aiApiKeyInput) {
+    aiApiKeyInput.value = settings.apiKey ? "••••••••" : "";
+    aiApiKeyInput.dataset.hasKey = settings.apiKey ? "true" : "false";
+  }
+  updateAiButtonState(settings);
+}
+
+function updateAiButtonState(settings) {
+  if (btnAiSummary) {
+    btnAiSummary.disabled = !lastMarkdown || !settings.apiKey;
+  }
+}
+
+async function generateAiSummary() {
+  if (!lastMarkdown) {
+    setStatus(exportStatusEl, "请先备份内容。", "err");
+    return;
+  }
+
+  const settings = await ClipStorage.getAiSettings();
+  if (!settings.apiKey || settings.apiKey === "••••••••") {
+    setStatus(exportStatusEl, "请先配置 AI API Key（去账号页设置）", "err");
+    showPanel("account");
+    return;
+  }
+
+  const btn = btnAiSummary;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "生成中...";
+  lastSummary = "";
+
+  try {
+    setStatus(exportStatusEl, "正在调用 AI 生成摘要...");
+
+    const result = await AISummary.generateSummaryWithFallback(lastMarkdown, {
+      apiBase: settings.apiBase,
+      apiKey: settings.apiKey,
+      model: settings.model,
+      meta: lastMeta,
+    });
+
+    if (result.success) {
+      lastSummary = result.summary;
+      if (aiSummaryContent) aiSummaryContent.textContent = lastSummary;
+      if (aiSummaryPreview) aiSummaryPreview.classList.remove("hidden");
+      setStatus(exportStatusEl, "摘要生成成功！", "ok");
+    } else {
+      setStatus(exportStatusEl, "生成失败：" + result.error, "err");
+    }
+  } catch (e) {
+    setStatus(exportStatusEl, "生成失败：" + (e.message || e), "err");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+async function copySummary() {
+  if (!lastSummary) return;
+  try {
+    await navigator.clipboard.writeText(lastSummary);
+    setStatus(exportStatusEl, "摘要已复制。", "ok");
+  } catch {
+    setStatus(exportStatusEl, "复制失败。", "err");
+  }
+}
+
+function appendSummaryToPreview() {
+  if (!lastSummary || !lastMarkdown) return;
+  const combined = `${lastMarkdown}\n\n---\n\n## AI 摘要\n\n${lastSummary}\n`;
+  lastMarkdown = combined;
+  previewEl.value = combined;
+  setStatus(exportStatusEl, "摘要已追加到预览，可复制或下载。", "ok");
+}
+
+async function saveAiSettings() {
+  const apiBase = aiApiBaseInput?.value?.trim() || "https://api.deepseek.com";
+  let apiKey = aiApiKeyInput?.value?.trim() || "";
+  // 如果输入的是占位符，保留原来的
+  if (apiKey === "••••••••") {
+    const settings = await ClipStorage.getAiSettings();
+    apiKey = settings.apiKey;
+  }
+  const model = aiModelInput?.value?.trim() || "deepseek-chat";
+
+  await ClipStorage.setAiSettings({
+    apiBase,
+    apiKey,
+    model,
+    enabled: true,
+  });
+
+  setStatus(aiSettingsStatus, "AI 设置已保存。", "ok");
+  updateAiButtonState({ apiKey });
+}
+
+async function testAiConnection() {
+  const apiBase = aiApiBaseInput?.value?.trim();
+  let apiKey = aiApiKeyInput?.value?.trim();
+  const model = aiModelInput?.value?.trim() || "deepseek-chat";
+
+  if (apiKey === "••••••••") {
+    const settings = await ClipStorage.getAiSettings();
+    apiKey = settings.apiKey;
+  }
+
+  if (!apiKey) {
+    setStatus(aiTestResult, "请先输入 API Key", "err");
+    return;
+  }
+
+  setStatus(aiTestResult, "测试中...");
+  btnTestAi.disabled = true;
+
+  try {
+    const result = await AISummary.generateSummary("你好，请回复 OK", {
+      apiBase: apiBase || "https://api.deepseek.com",
+      apiKey,
+      model,
+    });
+
+    if (result.success) {
+      setStatus(aiTestResult, "连接成功！AI 回复：" + result.summary.slice(0, 50) + "...", "ok");
+    } else {
+      setStatus(aiTestResult, "测试失败：" + result.error, "err");
+    }
+  } catch (e) {
+    setStatus(aiTestResult, "测试失败：" + (e.message || e), "err");
+  } finally {
+    btnTestAi.disabled = false;
+  }
+}
+
 setStatus(statusEl, "");
 try {
   const ver = chrome.runtime.getManifest().version;
@@ -679,4 +1042,23 @@ try {
   /* ignore */
 }
 refreshAccountUi();
+loadAiSettings();
 loadRegionResultIfAny();
+
+// AI Summary event listeners
+if (btnAiSummary) {
+  btnAiSummary.addEventListener("click", () => generateAiSummary());
+}
+if (btnCopySummary) {
+  btnCopySummary.addEventListener("click", () => copySummary());
+}
+if (btnAppendSummary) {
+  btnAppendSummary.addEventListener("click", () => appendSummaryToPreview());
+}
+if (btnSaveAiSettings) {
+  btnSaveAiSettings.addEventListener("click", () => saveAiSettings());
+}
+if (btnTestAi) {
+  btnTestAi.addEventListener("click", () => testAiConnection());
+}
+document.getElementById("btn-goto-ai-settings")?.addEventListener("click", () => showPanel("account"));

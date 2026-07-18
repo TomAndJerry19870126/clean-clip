@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>干净摘录</title>
+    <title>AI对话笔记本</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <header class="brand">
       <img class="brand-mark" src="../icons/logo.png" width="32" height="32" alt="" />
       <div class="brand-text">
-        <h1>干净摘录</h1>
+        <h1>AI对话笔记本</h1>
         <div class="brand-meta">
-          <p class="sub">AI 对话 · 中文好文 → Markdown</p>
+          <p class="sub">DeepSeek · 豆包 · 千问 对话备份</p>
           <span id="app-version" class="version">v…</span>
         </div>
       </div>
@@ -20,31 +20,95 @@
 
     <nav class="tabs" role="tablist">
       <button type="button" class="tab active" data-tab="clip">摘录</button>
+      <button type="button" class="tab" data-tab="export">导出</button>
       <button type="button" class="tab" data-tab="history">历史</button>
       <button type="button" class="tab" data-tab="share">传阅</button>
       <button type="button" class="tab" data-tab="account">账号</button>
-      <button type="button" class="tab" data-tab="feedback">反馈</button>
     </nav>
 
     <!-- Clip -->
     <section id="panel-clip" class="panel active">
       <div id="status" class="status"></div>
+      <div class="scene-hint">
+        <span class="scene-badge deepseek">DeepSeek</span>
+        <span class="scene-badge doubao">豆包</span>
+        <span class="scene-badge qwen">千问</span>
+        <span class="scene-badge zhihu">知乎</span>
+        <span class="scene-badge wx">公众号</span>
+      </div>
       <div class="actions">
-        <button id="btn-clip" type="button" class="primary">摘录本页</button>
+        <button id="btn-clip" type="button" class="primary">备份本页对话</button>
         <button id="btn-region" type="button">区域摘录</button>
         <button id="btn-copy" type="button" disabled>复制</button>
         <button id="btn-download-md" type="button" disabled>下载 .md</button>
         <button id="btn-download-word" type="button" disabled>下载 Word</button>
       </div>
       <p class="hint">
-        主场景：DeepSeek / 豆包 / 千问对话，或知乎 / 公众号等文章 → 摘录本页。其它页用划词浮标或区域摘录。
+        打开 DeepSeek/豆包/千问 对话页面，点「备份本页对话」→ 自动去除思考链 → 存为 Markdown。可在「导出」页发送到 Obsidian 或 Notion。
       </p>
+      <div id="turn-editor" class="turn-editor hidden">
+        <div class="turn-editor-head">
+          <span>对话轮次（可删除后再复制/导出）</span>
+          <button type="button" class="linkish" id="btn-turns-reset" hidden>恢复全部</button>
+        </div>
+        <div id="turn-list" class="turn-list"></div>
+      </div>
       <label class="preview-label" for="preview">预览</label>
       <textarea id="preview" readonly placeholder="摘录结果会出现在这里"></textarea>
       <p id="crash-hint" class="hint hidden">
-        摘录不理想？
-        <button type="button" class="linkish" id="btn-goto-crash">一键提交翻车反馈</button>
+        摘录不理想？<button type="button" class="linkish" id="btn-goto-feedback">提交反馈</button> 帮助我们改进
       </p>
+    </section>
+
+    <!-- Export to notes apps -->
+    <section id="panel-export" class="panel">
+      <div id="export-status" class="status">导出到你的笔记应用</div>
+
+      <div class="export-card">
+        <div class="export-card-info">
+          <div class="export-card-title">Obsidian</div>
+          <div class="export-card-desc">下载带 frontmatter 的 .md 文件，直接放入 Obsidian 库</div>
+        </div>
+        <button type="button" id="btn-export-obsidian" class="export-card-btn" disabled>下载 .md</button>
+      </div>
+
+      <div class="export-card">
+        <div class="export-card-info">
+          <div class="export-card-title">Notion</div>
+          <div class="export-card-desc">复制 Notion 块格式，在 Notion 页面粘贴</div>
+        </div>
+        <button type="button" id="btn-export-notion" class="export-card-btn secondary" disabled>复制块</button>
+      </div>
+
+      <hr class="sep" />
+
+      <div id="ai-summary-section">
+        <div class="section-title">AI 摘要</div>
+        <div class="export-card">
+          <div class="export-card-info">
+            <div class="export-card-title">生成智能摘要</div>
+            <div class="export-card-desc">用 AI 一键总结对话/文章要点</div>
+          </div>
+          <button type="button" id="btn-ai-summary" class="export-card-btn secondary" disabled>生成摘要</button>
+        </div>
+        <div id="ai-summary-preview" class="ai-summary-preview hidden">
+          <div class="ai-summary-label">AI 摘要结果</div>
+          <div id="ai-summary-content"></div>
+          <div class="ai-summary-actions">
+            <button type="button" id="btn-copy-summary" class="export-card-btn secondary">复制摘要</button>
+            <button type="button" id="btn-append-summary" class="export-card-btn">追加到正文</button>
+          </div>
+        </div>
+        <p class="hint">
+          需要配置 AI API Key：<button type="button" class="linkish" id="btn-goto-ai-settings">去账号页设置</button>
+        </p>
+      </div>
+
+      <div class="export-note">
+        <strong>使用提示：</strong>导出前请先在「摘录」页完成备份操作。Notion 复制块后，在 Notion 页面按 <code>Ctrl/Cmd + V</code> 粘贴。
+      </div>
+
+      <p class="hint">更多笔记应用支持开发中。如有需求请在「账号」页提交反馈。</p>
     </section>
 
     <!-- History (cloud, login required) -->
@@ -128,53 +192,53 @@
           <button id="btn-toggle-reg" type="button">去注册</button>
           <button id="btn-register" type="button" class="primary hidden">注册并登录</button>
         </div>
-        <p class="hint" id="register-hint">登录后摘录自动进云端历史，反馈也会关联账号。</p>
-        <details class="advanced">
-          <summary>高级：API 地址</summary>
-          <div class="field">
-            <label for="api-base">闲算 API</label>
-            <input id="api-base" type="url" placeholder="https://www.xiansuan.top" />
-          </div>
-          <div class="actions">
-            <button id="btn-save-api" type="button">保存 API</button>
-          </div>
-        </details>
+        <p class="hint">登录后摘录自动进云端历史，反馈也会关联账号。</p>
       </div>
-    </section>
 
-    <!-- Feedback -->
-    <section id="panel-feedback" class="panel">
-      <div id="feedback-status" class="status">描述问题或建议后提交。</div>
-      <div class="field">
-        <label for="fb-kind">类型</label>
-        <select id="fb-kind">
-          <option value="crash">翻车 / 剪错了</option>
-          <option value="suggestion">功能建议</option>
-          <option value="praise">好评</option>
-          <option value="other">其它</option>
-        </select>
+      <hr class="sep" />
+
+      <!-- AI API Settings -->
+      <div class="ai-settings">
+        <div class="section-title">AI 摘要设置</div>
+        <div id="ai-settings-status" class="status"></div>
+        <div class="field">
+          <label for="ai-api-base">API 地址</label>
+          <input id="ai-api-base" type="url" placeholder="https://api.deepseek.com" />
+          <p class="field-hint">支持 DeepSeek / OpenAI 兼容 API</p>
+        </div>
+        <div class="field">
+          <label for="ai-api-key">API Key</label>
+          <input id="ai-api-key" type="password" placeholder="sk-..." autocomplete="off" />
+          <p class="field-hint">你的 API Key 仅存储在本地，不会上传</p>
+        </div>
+        <div class="field">
+          <label for="ai-model">模型</label>
+          <input id="ai-model" type="text" placeholder="deepseek-chat" />
+          <p class="field-hint">如 deepseek-chat、gpt-4o-mini 等</p>
+        </div>
+        <div class="actions">
+          <button id="btn-save-ai-settings" type="button" class="primary">保存 AI 设置</button>
+          <button id="btn-test-ai" type="button">测试连接</button>
+        </div>
+        <p id="ai-test-result" class="hint"></p>
       </div>
-      <div class="field">
-        <label for="fb-content">内容</label>
-        <textarea
-          id="fb-content"
-          placeholder="例如：DeepSeek 长对话漏了几轮；某公众号正文没剪全…"
-        ></textarea>
-      </div>
-      <div class="field">
-        <label for="fb-email">联系邮箱（可选）</label>
-        <input id="fb-email" type="email" placeholder="未登录时可填" />
-      </div>
-      <div class="actions">
-        <button id="btn-feedback" type="button" class="primary">提交到闲算</button>
-        <button id="btn-fill-crash" type="button">填入上次摘录信息</button>
-      </div>
-      <p class="hint">用于改进 AI 对话摘录与中文站点选择器。</p>
+
+      <details class="advanced">
+        <summary>高级：闲算 API 地址</summary>
+        <div class="field">
+          <label for="api-base">闲算 API</label>
+          <input id="api-base" type="url" placeholder="https://www.xiansuan.top" />
+        </div>
+        <div class="actions">
+          <button id="btn-save-api" type="button">保存 API</button>
+        </div>
+      </details>
     </section>
 
     <script src="../lib/storage.js"></script>
     <script src="../lib/api.js"></script>
     <script src="../lib/export.js"></script>
+    <script src="../lib/ai-summary.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>
