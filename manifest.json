@@ -1,11 +1,19 @@
 {
   "manifest_version": 3,
   "name": "AI对话笔记本",
-  "version": "0.11.0",
+  "version": "0.12.1",
   "description": "把 DeepSeek/豆包/千问 对话，一键存成干净 Markdown。知乎/公众号/技术文章也能摘录。备份 AI 对话，构建你的知识库。支持 AI 摘要、导出到 Obsidian/Notion。",
   "action": {
     "default_title": "AI对话笔记本 · 备份 DeepSeek/豆包/千问 对话",
-    "default_popup": "popup/popup.html"
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
   },
   "permissions": ["activeTab", "scripting", "clipboardWrite", "storage"],
   "host_permissions": ["http://*/*", "https://*/*"],
@@ -16,7 +24,8 @@
         "lib/storage.js",
         "lib/api.js",
         "lib/html2md.js",
-        "content/selection-bubble.js"
+        "content/selection-bubble.js",
+        "content/fixed-launcher.js"
       ],
       "run_at": "document_idle",
       "all_frames": false
