@@ -9,6 +9,7 @@ const btnDownloadWord = document.getElementById("btn-download-word");
 const btnExportObsidian = document.getElementById("btn-export-obsidian");
 const btnExportNotion = document.getElementById("btn-export-notion");
 const btnShareCreate = document.getElementById("btn-share-create");
+const btnShareQuick = document.getElementById("btn-share-quick");
 const crashHint = document.getElementById("crash-hint");
 
 const shareStatus = document.getElementById("share-status");
@@ -218,6 +219,7 @@ function setResult(markdown, title, meta, turns) {
   btnExportObsidian.disabled = !has;
   btnExportNotion.disabled = !has;
   if (btnShareCreate) btnShareCreate.disabled = !has;
+  if (btnShareQuick) btnShareQuick.disabled = !has;
   const btnShareToUser = document.getElementById("btn-share-to-user");
   if (btnShareToUser) btnShareToUser.disabled = !has;
   crashHint.classList.toggle("hidden", !has);
@@ -673,14 +675,42 @@ function formatTime(v) {
   }
 }
 
+async function applyShareResult(data) {
+  shareCodeOut.value = data.shareCode || "";
+  shareUrlOut.value = data.shareUrl || "";
+  btnCopyShareCode.disabled = !shareCodeOut.value;
+  btnCopyShareUrl.disabled = !shareUrlOut.value;
+
+  const code = (data.shareCode || "").trim();
+  try {
+    await navigator.clipboard.writeText(code);
+    const kindHint = data.hasFile
+      ? `文件传阅码 ${code} 已复制！3 分钟内有效，对方下载后即销毁。`
+      : `传阅码 ${code} 已复制！3 分钟内有效，对方查看后即销毁（阅后即焚）。`;
+    setStatus(
+      shareStatus,
+      data.directed
+        ? `已发给 ${data.recipientEmail || "对方"}。传阅码 ${code} 已复制。`
+        : kindHint,
+      "ok",
+    );
+  } catch {
+    setStatus(
+      shareStatus,
+      `已生成传阅码 ${code}（3 分钟 / 阅后即焚），请点「复制数字码」。`,
+      "ok",
+    );
+  }
+}
+
 async function createShare(extra = {}) {
   if (!lastMarkdown) {
-    setStatus(shareStatus, "请先摘录或领取内容。", "err");
+    setStatus(shareStatus, "请先在「摘录」备份内容，再传阅。", "err");
     showPanel("share");
     return;
   }
   try {
-    setStatus(shareStatus, "正在生成传阅…");
+    setStatus(shareStatus, "正在生成 6 位传阅码…");
     showPanel("share");
     const data = await ClipApi.createShare({
       markdown: lastMarkdown,
@@ -688,29 +718,39 @@ async function createShare(extra = {}) {
       sourceUrl: lastMeta?.pageUrl,
       siteHost: lastMeta?.siteHost,
       clipKind: lastMeta?.clipKind,
-      ttlHours: 24,
+      ttlMinutes: 3,
       ...extra,
     });
-    shareCodeOut.value = data.shareCode || "";
-    shareUrlOut.value = data.shareUrl || "";
-    btnCopyShareCode.disabled = !shareCodeOut.value;
-    btnCopyShareUrl.disabled = !shareUrlOut.value;
-    const directed = data.directed
-      ? `已发给 ${data.recipientEmail || "对方"}，对方可在收件箱查看。`
-      : "可把口令或链接发给任何人。";
-    setStatus(
-      shareStatus,
-      `口令 ${data.shareCode}（约 24 小时有效）。${directed}`,
-      "ok",
-    );
-    try {
-      const tip = data.directed
-        ? `【干净摘录】发给你的内容，口令 ${data.shareCode}\n${data.shareUrl || ""}`
-        : `【干净摘录】口令 ${data.shareCode}\n${data.shareUrl || ""}`;
-      await navigator.clipboard.writeText(tip.trim());
-    } catch {
-      /* ignore */
-    }
+    await applyShareResult(data);
+  } catch (e) {
+    setStatus(shareStatus, e.message || String(e), "err");
+  }
+}
+
+async function createFileShare() {
+  const input = document.getElementById("share-file-input");
+  const file = input?.files?.[0];
+  if (!file) {
+    setStatus(shareStatus, "请先选择要传阅的文件。", "err");
+    showPanel("share");
+    return;
+  }
+  const max = 5 * 1024 * 1024;
+  if (file.size > max) {
+    setStatus(shareStatus, "文件不能超过 5MB。", "err");
+    return;
+  }
+  try {
+    setStatus(shareStatus, "正在上传并生成传阅码…");
+    showPanel("share");
+    const data = await ClipApi.createFileShare(file, {
+      title: file.name,
+      ttlMinutes: 3,
+    });
+    await applyShareResult(data);
+    if (input) input.value = "";
+    const btn = document.getElementById("btn-share-file");
+    if (btn) btn.disabled = true;
   } catch (e) {
     setStatus(shareStatus, e.message || String(e), "err");
   }
@@ -791,26 +831,40 @@ function escapeHtml(s) {
 }
 
 async function fetchShare() {
-  const code = (shareCodeIn.value || "").trim();
-  if (code.length < 4) {
-    setStatus(shareStatus, "请输入有效口令。", "err");
+  const code = (shareCodeIn.value || "").replace(/\D/g, "");
+  if (code.length !== 6) {
+    setStatus(shareStatus, "请输入 6 位数字传阅码。", "err");
     return;
   }
   try {
     setStatus(shareStatus, "领取中…");
     const data = await ClipApi.getShare(code);
-    setResult(data.markdown, data.title || "传阅领取", {
+    shareCodeOut.value = data.shareCode || code;
+    shareUrlOut.value = data.shareUrl || "";
+    btnCopyShareCode.disabled = !shareCodeOut.value;
+    btnCopyShareUrl.disabled = !shareUrlOut.value;
+
+    if (data.hasFile) {
+      setStatus(shareStatus, `收到文件「${data.fileName || "file"}」，正在下载…`);
+      const { blob, fileName } = await ClipApi.downloadShareFile(data.shareCode || code);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || data.fileName || "download.bin";
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus(shareStatus, "文件已下载（阅后即焚，此码已作废）。", "ok");
+      return;
+    }
+
+    setResult(data.markdown || "", data.title || "传阅内容", {
       ok: true,
       pageUrl: data.sourceUrl || "",
       siteHost: data.siteHost || "",
       clipKind: data.clipKind || "share-receive",
       previewSnippet: (data.markdown || "").slice(0, 1500),
     });
-    shareCodeOut.value = data.shareCode || code;
-    shareUrlOut.value = data.shareUrl || "";
-    btnCopyShareCode.disabled = !shareCodeOut.value;
-    btnCopyShareUrl.disabled = !shareUrlOut.value;
-    setStatus(shareStatus, "已领取并填入预览，可复制或下载。", "ok");
+    setStatus(shareStatus, "已领取，内容已填入「摘录」预览（阅后即焚，此码已作废）。", "ok");
     showPanel("clip");
   } catch (e) {
     setStatus(shareStatus, e.message || String(e), "err");
@@ -825,6 +879,12 @@ btnDownloadWord.addEventListener("click", () => downloadWord());
 if (btnExportObsidian) btnExportObsidian.addEventListener("click", () => exportToObsidian());
 if (btnExportNotion) btnExportNotion.addEventListener("click", () => exportToNotion());
 if (btnShareCreate) btnShareCreate.addEventListener("click", () => createShare());
+if (btnShareQuick) btnShareQuick.addEventListener("click", () => createShare());
+document.getElementById("btn-share-file")?.addEventListener("click", () => createFileShare());
+document.getElementById("share-file-input")?.addEventListener("change", (e) => {
+  const btn = document.getElementById("btn-share-file");
+  if (btn) btn.disabled = !e.target.files?.length;
+});
 btnShareFetch.addEventListener("click", () => fetchShare());
 
 if (turnList) {
@@ -850,7 +910,7 @@ btnCopyShareCode.addEventListener("click", async () => {
   if (!shareCodeOut.value) return;
   try {
     await navigator.clipboard.writeText(shareCodeOut.value);
-    setStatus(shareStatus, "口令已复制。", "ok");
+    setStatus(shareStatus, "数字码已复制。", "ok");
   } catch {
     setStatus(shareStatus, "复制失败。", "err");
   }
@@ -1041,6 +1101,25 @@ try {
 } catch {
   /* ignore */
 }
+
+const isFixedWindow =
+  typeof location !== "undefined" && /[?&]fixed=1(?:&|$)/.test(location.search);
+if (isFixedWindow) {
+  document.body.classList.add("fixed-window");
+  const pinBtn = document.getElementById("btn-pin-window");
+  const pinHint = document.getElementById("fixed-window-hint");
+  if (pinBtn) pinBtn.classList.add("hidden");
+  if (pinHint) pinHint.classList.remove("hidden");
+} else {
+  document.getElementById("btn-pin-window")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: "OPEN_FIXED_POPUP" }, () => {
+      void chrome.runtime.lastError;
+      // Close the ephemeral action popup so only the fixed window remains
+      window.close();
+    });
+  });
+}
+
 refreshAccountUi();
 loadAiSettings();
 loadRegionResultIfAny();
