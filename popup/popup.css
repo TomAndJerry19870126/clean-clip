@@ -36,6 +36,36 @@ body {
   gap: 10px;
 }
 
+.brand-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pin-btn {
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 122, 255, 0.35);
+  background: rgba(0, 122, 255, 0.08);
+  color: var(--accent);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pin-btn:hover {
+  background: rgba(0, 122, 255, 0.14);
+}
+
+.pin-hint {
+  margin: 8px 0 0;
+}
+
+body.fixed-window {
+  width: 400px;
+  min-height: 100vh;
+}
+
 .brand-mark {
   width: 32px;
   height: 32px;
@@ -616,5 +646,32 @@ details.advanced summary {
 
 details.advanced .field {
   margin-top: 8px;
+}
+
+.share-hero {
+  margin: 10px 0 14px;
+}
+
+.share-cta {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.share-result .row {
+  margin-bottom: 8px;
+}
+
+.share-result label.mt {
+  display: block;
+  margin-top: 10px;
+}
+
+.share-code-big {
+  font-size: 18px !important;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
