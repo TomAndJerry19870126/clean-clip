@@ -1,1 +1,43 @@
+target/
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+**/application-prod.yml
+**/application-local.yml
+**/application-*.local.yml
+**/secrets/
+**/*.pem
+**/*.key
+!**/*.example.key
+**/dumps/
+**/hs_err_pid*.log
+
+node_modules/
+dist/
+*.tsbuildinfo
+
+logs/
+*.log
+server.log
+server.pid
+
+# Build artifacts
+**/server.jar
+xiansuan-server/target/
+allinai-server/target/
+allinai-web/dist/
+
+# Clip share temp files
+**/data/clip-share/
+
+# Local editor / OS
+Thumbs.db
+
 test/**
