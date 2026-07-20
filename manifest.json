@@ -1,21 +1,23 @@
 {
   "manifest_version": 3,
   "name": "干净摘录",
-  "version": "0.12.2",
+  "version": "0.12.5",
   "description": "CleanMD — 网页与 AI 对话一键摘录为干净 Markdown。支持 DeepSeek/豆包/千问、划词/区域摘录、Word/Excel、传阅与小文件分享。",
   "action": {
-    "default_title": "干净摘录 · CleanMD",
-    "default_popup": "popup/popup.html",
+    "default_title": "干净摘录 · CleanMD（侧边栏，点网页不会关掉）",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
   },
+  "side_panel": {
+    "default_path": "popup/popup.html"
+  },
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage"],
+  "permissions": ["activeTab", "scripting", "clipboardWrite", "storage", "sidePanel"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "content_scripts": [
     {
@@ -24,8 +26,7 @@
         "lib/storage.js",
         "lib/api.js",
         "lib/html2md.js",
-        "content/selection-bubble.js",
-        "content/fixed-launcher.js"
+        "content/selection-bubble.js"
       ],
       "run_at": "document_idle",
       "all_frames": false

@@ -16,11 +16,7 @@
           <span id="app-version" class="version">v…</span>
         </div>
       </div>
-      <button id="btn-pin-window" type="button" class="pin-btn" title="固定为独立窗口（点网页不会关掉）">
-        固定窗口
-      </button>
     </header>
-    <p id="fixed-window-hint" class="hint pin-hint hidden">已固定为独立窗口，可一直开着操作网页。</p>
 
     <nav class="tabs" role="tablist">
       <button type="button" class="tab active" data-tab="clip">摘录</button>
@@ -44,7 +40,7 @@
         <button id="btn-clip" type="button" class="primary">备份本页对话</button>
         <button id="btn-region" type="button">区域摘录</button>
         <button id="btn-copy" type="button" disabled>复制</button>
-        <button id="btn-share-quick" type="button" disabled>一键传阅</button>
+        <button id="btn-share-quick" type="button" disabled>传阅文字</button>
         <button id="btn-download-md" type="button" disabled>下载 .md</button>
         <button id="btn-download-word" type="button" disabled>下载 Word</button>
       </div>
@@ -126,54 +122,65 @@
       <p class="hint">登录后可在此打开、复制或删除云端记录。</p>
     </section>
 
-    <!-- Share：A 生成 6 位数字码，B 输入即可查看（免登录） -->
+    <!-- Share：发出 / 领取 分开，文字与文件两条路径 -->
     <section id="panel-share" class="panel">
       <div id="share-status" class="status">
-        A 生成 6 位数字码（默认 3 分钟有效、阅后即焚）→ 发给 B → B 输入一次即可查看。
+        用 6 位数字码传给对方：免登录 · 约 3 分钟有效 · 领取后即焚。
       </div>
 
-      <div class="share-hero">
-        <button id="btn-share-create" type="button" class="primary share-cta" disabled>
-          生成 6 位传阅码（当前预览）
-        </button>
-        <p class="hint">生成后自动复制。3 分钟内有效；对方查看/下载成功后立刻销毁。</p>
-      </div>
-
-      <div class="field">
-        <label for="share-file-input">或传阅单个小文件（≤ 5MB）</label>
-        <input id="share-file-input" type="file" />
-        <div class="actions" style="margin-top: 8px">
+      <div class="share-section-title">① 我要发出</div>
+      <div class="share-cards">
+        <div class="share-card">
+          <div class="share-card-title">传文字</div>
+          <p class="share-card-desc">把「摘录」页里的预览内容生成数字码发给对方。</p>
+          <button id="btn-share-create" type="button" class="primary" disabled>生成文字传阅码</button>
+        </div>
+        <div class="share-card">
+          <div class="share-card-title">传文件</div>
+          <p class="share-card-desc">单个附件 ≤ 5MB（文档 / 图片 / 压缩包等）。</p>
+          <label class="file-pick" for="share-file-input">
+            <input id="share-file-input" type="file" />
+            <span id="share-file-name" class="file-pick-name">选择文件…</span>
+          </label>
           <button id="btn-share-file" type="button" class="primary" disabled>生成文件传阅码</button>
         </div>
-        <p class="hint">支持常见文档/图片/压缩包等；对方输入码后下载，下载即焚。</p>
       </div>
 
-      <div class="field share-result">
-        <label>传阅码（6 位数字）</label>
-        <div class="row">
-          <input id="share-code-out" type="text" readonly placeholder="例如 482917" class="share-code-big" />
-          <button id="btn-copy-share-code" type="button" disabled>复制数字码</button>
+      <div id="share-result-box" class="share-result-box hidden">
+        <div class="share-result-head">
+          <span>已生成传阅码</span>
+          <span id="share-result-kind" class="share-kind-tag"></span>
         </div>
-        <label class="mt">备用链接（可选）</label>
-        <div class="row">
-          <input id="share-url-out" type="text" readonly placeholder="https://www.xiansuan.top/clip/s/482917" />
-          <button id="btn-copy-share-url" type="button" disabled>复制链接</button>
+        <div class="field share-result">
+          <label>把下面的 6 位数字发给对方</label>
+          <div class="row">
+            <input id="share-code-out" type="text" readonly placeholder="—— —— —— —— —— ——" class="share-code-big" />
+            <button id="btn-copy-share-code" type="button" disabled>复制码</button>
+          </div>
+          <label class="mt">或发链接（可选）</label>
+          <div class="row">
+            <input id="share-url-out" type="text" readonly placeholder="https://www.xiansuan.top/clip/s/…" />
+            <button id="btn-copy-share-url" type="button" disabled>复制链接</button>
+          </div>
         </div>
       </div>
 
       <hr class="sep" />
 
-      <div class="field">
-        <label for="share-code-in">我是接收方：输入 6 位数字码</label>
-        <div class="row">
-          <input id="share-code-in" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="482917" />
-          <button type="button" id="btn-share-fetch" class="primary">查看内容</button>
+      <div class="share-section-title">② 我要领取</div>
+      <div class="share-receive">
+        <p class="hint" style="margin-top: 0">对方发来数字码后，在此输入。文字会进入「摘录」预览；文件会自动下载。</p>
+        <div class="field">
+          <label for="share-code-in">输入 6 位数字码</label>
+          <div class="row">
+            <input id="share-code-in" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="482917" class="share-code-big" />
+            <button type="button" id="btn-share-fetch" class="primary">领取</button>
+          </div>
         </div>
-        <p class="hint">输入后内容会出现在「摘录」预览；该码随后作废（阅后即焚）。</p>
       </div>
 
       <details class="advanced">
-        <summary>可选：发给已注册闲算用户（需登录）</summary>
+        <summary>高级：发给已注册闲算用户（需双方登录）</summary>
         <div class="field">
           <label for="share-to-email">对方注册邮箱</label>
           <div class="row">
@@ -182,7 +189,7 @@
           </div>
         </div>
         <div class="actions">
-          <button type="button" id="btn-inbox-refresh">刷新我的收件箱</button>
+          <button type="button" id="btn-inbox-refresh">刷新收件箱</button>
         </div>
         <div id="share-inbox" class="inbox"></div>
       </details>

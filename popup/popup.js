@@ -676,17 +676,23 @@ function formatTime(v) {
 }
 
 async function applyShareResult(data) {
+  const box = document.getElementById("share-result-box");
+  const kindEl = document.getElementById("share-result-kind");
   shareCodeOut.value = data.shareCode || "";
   shareUrlOut.value = data.shareUrl || "";
   btnCopyShareCode.disabled = !shareCodeOut.value;
   btnCopyShareUrl.disabled = !shareUrlOut.value;
+  if (box) box.classList.remove("hidden");
+  if (kindEl) {
+    kindEl.textContent = data.hasFile ? "文件" : "文字";
+  }
 
   const code = (data.shareCode || "").trim();
   try {
     await navigator.clipboard.writeText(code);
     const kindHint = data.hasFile
-      ? `文件传阅码 ${code} 已复制！3 分钟内有效，对方下载后即销毁。`
-      : `传阅码 ${code} 已复制！3 分钟内有效，对方查看后即销毁（阅后即焚）。`;
+      ? `文件传阅码 ${code} 已复制。发给对方，对方在「领取」输入即可下载（约 3 分钟 / 阅后即焚）。`
+      : `文字传阅码 ${code} 已复制。发给对方，对方在「领取」输入即可查看（约 3 分钟 / 阅后即焚）。`;
     setStatus(
       shareStatus,
       data.directed
@@ -697,7 +703,7 @@ async function applyShareResult(data) {
   } catch {
     setStatus(
       shareStatus,
-      `已生成传阅码 ${code}（3 分钟 / 阅后即焚），请点「复制数字码」。`,
+      `已生成传阅码 ${code}，请点「复制码」发给对方。`,
       "ok",
     );
   }
@@ -883,7 +889,14 @@ if (btnShareQuick) btnShareQuick.addEventListener("click", () => createShare());
 document.getElementById("btn-share-file")?.addEventListener("click", () => createFileShare());
 document.getElementById("share-file-input")?.addEventListener("change", (e) => {
   const btn = document.getElementById("btn-share-file");
-  if (btn) btn.disabled = !e.target.files?.length;
+  const nameEl = document.getElementById("share-file-name");
+  const file = e.target.files?.[0];
+  if (btn) btn.disabled = !file;
+  if (nameEl) {
+    nameEl.textContent = file
+      ? `${file.name}（${(file.size / 1024).toFixed(1)} KB）`
+      : "选择文件…";
+  }
 });
 btnShareFetch.addEventListener("click", () => fetchShare());
 
@@ -1100,24 +1113,6 @@ try {
   if (el) el.textContent = `v${ver}`;
 } catch {
   /* ignore */
-}
-
-const isFixedWindow =
-  typeof location !== "undefined" && /[?&]fixed=1(?:&|$)/.test(location.search);
-if (isFixedWindow) {
-  document.body.classList.add("fixed-window");
-  const pinBtn = document.getElementById("btn-pin-window");
-  const pinHint = document.getElementById("fixed-window-hint");
-  if (pinBtn) pinBtn.classList.add("hidden");
-  if (pinHint) pinHint.classList.remove("hidden");
-} else {
-  document.getElementById("btn-pin-window")?.addEventListener("click", () => {
-    chrome.runtime.sendMessage({ type: "OPEN_FIXED_POPUP" }, () => {
-      void chrome.runtime.lastError;
-      // Close the ephemeral action popup so only the fixed window remains
-      window.close();
-    });
-  });
 }
 
 refreshAccountUi();
