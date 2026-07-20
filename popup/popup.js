@@ -209,7 +209,7 @@ function applyTurnsEdit() {
 
 function setResult(markdown, title, meta, turns) {
   lastMarkdown = markdown || "";
-  lastTitle = (title || "ai-notebook").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
+  lastTitle = (title || "cleanmd").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80);
   lastMeta = meta || null;
   previewEl.value = lastMarkdown;
   const has = Boolean(lastMarkdown);
@@ -357,7 +357,7 @@ function downloadMarkdown() {
 
 function downloadWord() {
   if (!lastMarkdown) return;
-  ClipExport.downloadWord(lastMarkdown, lastTitle || "ai-notebook");
+  ClipExport.downloadWord(lastMarkdown, lastTitle || "cleanmd");
   setStatus(statusEl, "已开始下载 Word（.doc，可用 Word/WPS 打开）。", "ok");
 }
 
@@ -369,7 +369,7 @@ function exportToObsidian() {
     platform: getPlatformFromKind(lastMeta?.clipKind),
   };
   const obsidianMd = ClipExport.buildObsidianMd(lastMarkdown, lastTitle, meta);
-  ClipExport.downloadMarkdown(obsidianMd, lastTitle || "ai-notebook");
+  ClipExport.downloadMarkdown(obsidianMd, lastTitle || "cleanmd");
   setStatus(exportStatusEl, "已下载 Obsidian 格式 .md（带 frontmatter）", "ok");
 }
 

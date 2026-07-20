@@ -2,12 +2,12 @@
  * Fixed launcher icon on every page — opens the detached (pinned) extension window.
  */
 (function () {
-  const NS = "__AI_NOTEBOOK_FIXED_LAUNCHER__";
+  const NS = "__CLEAN_MD_FIXED_LAUNCHER__";
   if (window[NS]) return;
   window[NS] = true;
 
-  const ROOT_ID = "ai-notebook-fixed-launcher";
-  const STYLE_ID = "ai-notebook-fixed-launcher-style";
+  const ROOT_ID = "cleanmd-fixed-launcher";
+  const STYLE_ID = "cleanmd-fixed-launcher-style";
 
   function ensureStyle() {
     if (document.getElementById(STYLE_ID)) return;
@@ -70,8 +70,8 @@
     const btn = document.createElement("button");
     btn.id = ROOT_ID;
     btn.type = "button";
-    btn.title = "打开 AI对话笔记本（固定窗口）";
-    btn.setAttribute("aria-label", "打开 AI对话笔记本固定窗口");
+    btn.title = "打开干净摘录（固定窗口）";
+    btn.setAttribute("aria-label", "打开干净摘录固定窗口");
     const img = document.createElement("img");
     try {
       img.src = chrome.runtime.getURL("icons/logo.png");

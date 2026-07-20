@@ -1,21 +1,21 @@
-# AI对话笔记本 · AI Notebook
+# 干净摘录 · CleanMD
 
 <p align="center">
-  <img src="icons/logo.png" width="96" height="96" alt="AI Notebook" />
+  <img src="icons/logo.png" width="96" height="96" alt="CleanMD" />
 </p>
 
 <p align="center">
-  <strong>把 DeepSeek / 豆包 / 千问 对话，一键存成干净 Markdown</strong>
+  <strong>网页 / AI 对话 → 干净 Markdown</strong>
 </p>
 
 <p align="center">
-  AI 对话备份专家 · 构建你的第二大脑<br />
-  导出 Markdown / Word / Obsidian / Notion · AI 智能摘要
+  DeepSeek · 豆包 · 千问 · 划词 / 区域摘录<br />
+  导出 Markdown / Word / Excel · Obsidian / Notion · 传阅与小文件
 </p>
 
 <p align="center">
   <img alt="Manifest" src="https://img.shields.io/badge/Manifest-V3-blue" />
-  <img alt="Version" src="https://img.shields.io/badge/version-0.11.0-007AFF" />
+  <img alt="Version" src="https://img.shields.io/badge/version-0.12.2-007AFF" />
   <img alt="DeepSeek" src="https://img.shields.io/badge/DeepSeek-chat-blue" />
   <img alt="Doubao" src="https://img.shields.io/badge/豆包-chat-00A6A6" />
   <img alt="Qwen" src="https://img.shields.io/badge/通义千问-chat-6B57FF" />
@@ -122,7 +122,7 @@ tags: []
 
 ### Chrome Web Store 安装（即将上线）
 
-直接在 [Chrome 网上应用店](https://chrome.google.com/webstore) 搜索「AI对话笔记本」安装。
+直接在 [Chrome 网上应用店](https://chrome.google.com/webstore) 搜索「干净摘录」安装。
 
 ## 使用
 

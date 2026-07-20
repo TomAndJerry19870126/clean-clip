@@ -1,10 +1,10 @@
-# AI Notebook - Privacy Policy
+# CleanMD / 干净摘录 - Privacy Policy
 
-Last updated: 2026-07-18
+Last updated: 2026-07-20
 
 ## Overview
 
-AI Notebook ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our Chrome browser extension.
+CleanMD / 干净摘录 ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our Chrome browser extension.
 
 ## Information We Collect
 

@@ -1,15 +1,15 @@
-# AI Notebook - Chrome Web Store Listing
+# CleanMD / 干净摘录 - Chrome Web Store Listing
 
 ## Short Description (80 characters max)
-Save DeepSeek, Doubao & Qwen chats as clean Markdown. Build your AI knowledge base.
+CleanMD: clip DeepSeek/Doubao/Qwen chats & pages to clean Markdown. Share & export.
 
 ## Full Description
 
-**Your AI Chat Backup Expert**
+**CleanMD — pages and AI chats to clean Markdown**
 
-AI Notebook turns your AI conversations into clean, searchable Markdown notes. Never lose valuable insights from DeepSeek, Doubao, or Qwen chats again.
+CleanMD (干净摘录) turns AI conversations and web articles into clean, searchable Markdown. Never lose valuable insights from DeepSeek, Doubao, or Qwen chats again.
 
-### Why AI Notebook?
+### Why CleanMD?
 
 - **One-click backup** of entire AI conversations
 - **Removes thinking chains** automatically - keep only the answers

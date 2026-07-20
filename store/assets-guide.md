@@ -1,4 +1,4 @@
-# AI Notebook - Chrome Web Store Assets
+# CleanMD / 干净摘录 - Chrome Web Store Assets
 
 ## Required Screenshots (Take screenshots of the popup UI)
 
@@ -40,7 +40,6 @@
 
 ## Tagline Variations
 
-- "Your AI Chat Backup Expert"
-- "Save AI conversations. Build knowledge."
-- "DeepSeek对话备份助手"
-- "AI对话笔记，知识库从此开始"
+- "干净摘录 · CleanMD"
+- "网页与 AI 对话 → 干净 Markdown"
+- "DeepSeek / 豆包 / 千问一键摘录"
